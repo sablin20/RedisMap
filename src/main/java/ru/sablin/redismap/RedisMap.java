@@ -1,30 +1,26 @@
 package ru.sablin.redismap;
 
-import lombok.Data;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
+import redis.clients.jedis.Jedis;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-@Data
 public class RedisMap implements Map<String, String> {
-    private final ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
-    private final RedissonClient redisson;
+
+    private Jedis client;
+    private String redisHKey;
 
     public RedisMap(String host, int port) {
-        Config config = new Config();
-        config.useSingleServer().setAddress(host + ":" + port);
-        redisson = Redisson.create(config);
+        client = new Jedis(host, port);
     }
 
     @Override
     public String get(Object key) {
-        return map.get(key);
+        return client.hget(redisHKey, key.toString());
     }
 
     @Override
     public String put(String key, String value) {
-        return map.put(key, value);
+        var old = client.hget(redisHKey, key);
+        client.hset(redisHKey, key, value);
+        return old;
     }
 }
